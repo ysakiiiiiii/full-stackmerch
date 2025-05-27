@@ -1,0 +1,197 @@
+<?php
+// database_init.php
+
+// Database configuration
+$db_host = 'localhost';
+$db_user = 'root';
+$db_pass = 'root';
+$db_name = 'ecommerce_db';
+
+// Create connection
+$conn = mysqli_connect($db_host, $db_user, $db_pass);
+
+// Check connection
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+// Create database if not exists
+$sql = "CREATE DATABASE IF NOT EXISTS $db_name";
+if (mysqli_query($conn, $sql)) {
+    echo "Database created successfully or already exists\n";
+} else {
+    echo "Error creating database: " . mysqli_error($conn) . "\n";
+}
+
+// Select the database
+mysqli_select_db($conn, $db_name);
+
+// Function to execute SQL queries with error handling
+function execute_query($conn, $sql) {
+    if (mysqli_query($conn, $sql)) {
+        echo "Query executed successfully\n";
+    } else {
+        echo "Error executing query: " . mysqli_error($conn) . "\n";
+        echo "SQL: " . $sql . "\n";
+    }
+}
+
+// Create tables in proper order to avoid foreign key errors
+
+// 1. Create USERS table
+$sql = "CREATE TABLE IF NOT EXISTS USERS (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL, 
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    profile_pic_url VARCHAR(255),
+    contact_number VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)";
+execute_query($conn, $sql);
+
+// 2. Create ROLES table (note: fixed typo from ROL.ES)
+$sql = "CREATE TABLE IF NOT EXISTS ROLES (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    role ENUM('admin', 'customer', 'vendor') NOT NULL DEFAULT 'customer',
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
+    UNIQUE KEY (user_id, role)
+)";
+execute_query($conn, $sql);
+
+// 3. Create CATEGORIES table
+$sql = "CREATE TABLE IF NOT EXISTS CATEGORIES (
+    category_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+execute_query($conn, $sql);
+
+// 4. Create PRODUCTS table
+$sql = "CREATE TABLE IF NOT EXISTS PRODUCTS (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category_id INT,
+    color VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES CATEGORIES(category_id) ON DELETE SET NULL
+)";
+execute_query($conn, $sql);
+
+// 5. Create PRODUCT_IMAGES table
+$sql = "CREATE TABLE IF NOT EXISTS PRODUCT_IMAGES (
+    image_id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_url VARCHAR(255) NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE
+)";
+
+execute_query($conn, $sql);
+
+// 6. Create ADDRESSES table
+$sql = "CREATE TABLE IF NOT EXISTS ADDRESSES (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    province VARCHAR(50) NOT NULL,
+    municipality VARCHAR(50) NOT NULL,
+    barangay VARCHAR(50) NOT NULL,
+    zip_code VARCHAR(10) NOT NULL,
+    is_default TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE
+)";
+execute_query($conn, $sql);
+
+// 7. Create CARTS table
+$sql = "CREATE TABLE IF NOT EXISTS CARTS (
+    cart_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE
+)";
+execute_query($conn, $sql);
+
+// 8. Create CART_ITEMS table
+$sql = "CREATE TABLE IF NOT EXISTS CART_ITEMS (
+    cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    cart_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cart_id) REFERENCES CARTS(cart_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE,
+    UNIQUE KEY (cart_id, product_id)
+)";
+execute_query($conn, $sql);
+
+// 9. Create ORDERS table
+$sql = "CREATE TABLE IF NOT EXISTS ORDERS (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status ENUM('pending', 'failed', 'out for delivery', 'ready to pick up') DEFAULT 'pending',
+    shipping_address_id INT,
+    payment_method VARCHAR(50),
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id),
+    FOREIGN KEY (shipping_address_id) REFERENCES ADDRESSES(address_id)
+)";
+execute_query($conn, $sql);
+
+// 10. Create ORDER_ITEMS table
+$sql = "CREATE TABLE IF NOT EXISTS ORDER_ITEMS (
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES ORDERS(order_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id)
+)";
+execute_query($conn, $sql);
+
+// 11. Create FAVORITES table
+$sql = "CREATE TABLE IF NOT EXISTS FAVORITES (
+    favorite_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE,
+    UNIQUE KEY (user_id, product_id)
+)";
+execute_query($conn, $sql);
+
+if (mysqli_num_rows($result) == 0) {
+    // Create password hash for initial admin password
+    $password = 'admin123'; // change this initial password as needed
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+    // Insert admin user with password hash
+    $sql = "INSERT INTO USERS (username, email, password_hash, first_name, last_name) 
+            VALUES ('admin', 'admin@example.com', '$password_hash', 'System', 'Administrator')";
+    execute_query($conn, $sql);
+
+    $admin_id = mysqli_insert_id($conn);
+
+    // Assign admin role
+    $sql = "INSERT INTO ROLES (role, user_id) VALUES ('admin', $admin_id)";
+    execute_query($conn, $sql);
+
+    echo "Admin user created with ID: $admin_id and initial password 'admin123'\n";
+}
+
+
+// Close connection
+mysqli_close($conn);
+
+echo "Database initialization complete!\n";
+?>
