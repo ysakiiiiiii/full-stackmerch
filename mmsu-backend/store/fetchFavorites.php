@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once '../config/database.php';
 
 header('Content-Type: application/json');
@@ -41,7 +45,7 @@ $query = $mysqli->prepare("
         pi.image_url AS image
     FROM FAVORITES f
     JOIN PRODUCTS p ON f.product_id = p.product_id
-    LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id AND pi.is_primary = 1
+    LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id
     WHERE f.user_id = ?
 ");
 $query->bind_param("i", $user_id);

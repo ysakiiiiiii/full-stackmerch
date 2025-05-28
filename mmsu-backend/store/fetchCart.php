@@ -30,7 +30,7 @@ if ($cartRow = $cartResult->fetch_assoc()) {
             pi.image_url AS image
         FROM CART_ITEMS ci
         JOIN PRODUCTS p ON ci.product_id = p.product_id
-        LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id AND pi.is_primary = 1
+        LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id 
         WHERE ci.cart_id = ?
     ");
     $itemsQuery->bind_param("i", $cart_id);

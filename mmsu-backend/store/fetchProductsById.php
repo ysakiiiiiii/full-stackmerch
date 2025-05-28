@@ -27,7 +27,7 @@ $sql = "
         p.color AS color
     FROM PRODUCTS p
     LEFT JOIN CATEGORIES c ON p.category_id = c.category_id
-    LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id AND pi.is_primary = 1
+    LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id
     WHERE p.product_id = ?
 ";
 

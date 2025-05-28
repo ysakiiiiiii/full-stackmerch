@@ -1,22 +1,18 @@
 <?php
+// Start the session to access $_SESSION variables
+session_start();
 
-// Handle preflight requests for CORS
+// Set CORS headers for frontend running at http://localhost:5173 (adjust origin as needed)
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Handle preflight OPTIONS requests and exit early
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    header("Access-Control-Allow-Origin: http://localhost:5173");
-    header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Allow-Methods: POST, OPTIONS, GET");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
     http_response_code(200);
     exit();
 }
-
-// Set CORS headers for actual requests
-header("Access-Control-Allow-Origin: http://localhost:5173");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json");
-
-// Start the session
-session_start();
 
 // Database connection parameters
 $host = 'localhost';
@@ -24,22 +20,22 @@ $username = 'root';
 $password = 'root';
 $database = 'ecommerce_db';
 
-// Create a new mysqli instance
+// Create a new mysqli connection object
 $mysqli = new mysqli($host, $username, $password, $database);
 
-// Check for connection errors
-if ($mysqli->connect_error) {
+// Check connection
+if ($mysqli->connect_errno) {
     error_log("Database connection failed: " . $mysqli->connect_error);
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Database connection failed'
+        'message' => 'Failed to connect to database'
     ]);
     exit();
 }
 
-// Set the character set to utf8mb4 for proper encoding
-if (!$mysqli->set_charset('utf8mb4')) {
+// Set charset for proper encoding
+if (!$mysqli->set_charset("utf8mb4")) {
     error_log("Error loading character set utf8mb4: " . $mysqli->error);
     http_response_code(500);
     echo json_encode([
@@ -49,5 +45,6 @@ if (!$mysqli->set_charset('utf8mb4')) {
     exit();
 }
 
-// Optionally, you can return the $mysqli object for use in other scripts
-return $mysqli;
+// Now $mysqli is globally available in any script that includes this file
+
+// No closing PHP tag here to avoid accidental whitespace output
