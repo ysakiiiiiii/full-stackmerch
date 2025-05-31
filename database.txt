@@ -1,0 +1,277 @@
+<?php
+// database_init.php
+
+// Database configuration
+$db_host = 'localhost';
+$db_user = 'root';
+$db_pass = 'root';
+$db_name = 'ecommerce_db';
+
+// Create connection
+$conn = new mysqli($db_host, $db_user, $db_pass);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Create database if not exists
+$sql = "CREATE DATABASE IF NOT EXISTS $db_name";
+if ($conn->query($sql) === TRUE) {
+    echo "Database created successfully or already exists\n";
+} else {
+    echo "Error creating database: " . $conn->error . "\n";
+}
+
+// Select the database
+$conn->select_db($db_name);
+
+// Function to execute SQL queries with error handling
+function execute_query($conn, $sql) {
+    if ($conn->query($sql) === TRUE) {
+        echo "Query executed successfully\n";
+    } else {
+        echo "Error executing query: " . $conn->error . "\n";
+        echo "SQL: " . $sql . "\n";
+    }
+}
+
+// TABLE CREATION
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS USERS (
+        user_id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        first_name VARCHAR(50),
+        last_name VARCHAR(50),
+        profile_pic_url VARCHAR(255),
+        contact_number VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS USER_PAYMENTS (
+        payment_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        type ENUM('gcash', 'card') NOT NULL,
+        gcash_phone VARCHAR(20),
+        card_number VARCHAR(20),
+        card_expiry VARCHAR(10),
+        is_default BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS USER_CONTACT_NUMBERS (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        phone_number VARCHAR(20) NOT NULL,
+        is_default BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS ROLES (
+        role_id INT AUTO_INCREMENT PRIMARY KEY,
+        role ENUM('admin', 'customer', 'vendor') NOT NULL DEFAULT 'customer',
+        user_id INT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
+        UNIQUE KEY (user_id, role)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS CATEGORIES (
+        category_id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS PRODUCTS (
+        product_id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        price DECIMAL(10,2) NOT NULL,
+        category_id INT,
+        color VARCHAR(100) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (category_id) REFERENCES CATEGORIES(category_id) ON DELETE SET NULL
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS PRODUCT_IMAGES (
+        image_id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id INT NOT NULL,
+        image_url VARCHAR(255) NOT NULL,
+        FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS ADDRESSES (
+        address_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        country VARCHAR(50) NOT NULL,
+        province VARCHAR(50) NOT NULL,
+        municipality VARCHAR(50) NOT NULL,
+        barangay VARCHAR(50) NOT NULL,
+        zip_code VARCHAR(10) NOT NULL,
+        is_default TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS CARTS (
+        cart_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS CART_ITEMS (
+        cart_item_id INT AUTO_INCREMENT PRIMARY KEY,
+        cart_id INT NOT NULL,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (cart_id) REFERENCES CARTS(cart_id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE,
+        UNIQUE KEY (cart_id, product_id)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS ORDERS (
+        order_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10,2) NOT NULL,
+        status ENUM('pending', 'failed', 'out for delivery', 'ready to pick up') DEFAULT 'pending',
+        shipping_address_id INT,
+        payment_method VARCHAR(50),
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id),
+        FOREIGN KEY (shipping_address_id) REFERENCES ADDRESSES(address_id)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS ORDER_ITEMS (
+        order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10,2) NOT NULL,
+        FOREIGN KEY (order_id) REFERENCES ORDERS(order_id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS ORDER_PAYMENTS (
+        payment_id INT AUTO_INCREMENT PRIMARY KEY,
+        order_id INT NOT NULL,
+        payment_method VARCHAR(50) NOT NULL,
+        gcash_number VARCHAR(20),
+        card_number VARCHAR(20),
+        card_expiry VARCHAR(7),
+        is_successful BOOLEAN DEFAULT FALSE,
+        FOREIGN KEY (order_id) REFERENCES ORDERS(order_id)
+    )
+");
+
+execute_query($conn, "
+    CREATE TABLE IF NOT EXISTS FAVORITES (
+        favorite_id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        product_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES USERS(user_id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES PRODUCTS(product_id) ON DELETE CASCADE,
+        UNIQUE KEY (user_id, product_id)
+    )
+");
+
+// Check if admin exists
+$result = $conn->query("SELECT * FROM USERS WHERE username = 'admin'");
+if ($result && $result->num_rows === 0) {
+    $password_hash = password_hash('admin123', PASSWORD_DEFAULT);
+    $conn->query("INSERT INTO USERS (username, email, password_hash, first_name, last_name) 
+                  VALUES ('admin', 'admin@example.com', '$password_hash', 'System', 'Administrator')");
+    $admin_id = $conn->insert_id;
+    $conn->query("INSERT INTO ROLES (role, user_id) VALUES ('admin', $admin_id)");
+}
+
+// Insert categories
+$categories = ['Caps', 'Accessories', 'Jackets', 'Bags'];
+foreach ($categories as $cat) {
+    $stmt = $conn->prepare("INSERT IGNORE INTO CATEGORIES (name) VALUES (?)");
+    $stmt->bind_param("s", $cat);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Insert products
+$products = [
+    ['MMSU Cap', 150.00, 'Caps', 'Green', 'Official MMSU baseball cap with embroidered logo. Adjustable strap for perfect fit.'],
+    ['MMSU Headband', 74.00, 'Accessories', 'Green', 'Comfortable headband for all-day wear.'],
+    ['MMSU Jacket W', 499.99, 'Jackets', 'White', 'Water-resistant MMSU jacket for women with logo embroidery.'],
+    ['MMSU Tote Bag', 199.99, 'Bags', 'White', 'Spacious and durable tote bag with MMSU branding.'],
+];
+
+foreach ($products as $p) {
+    list($name, $price, $category, $color, $desc) = $p;
+    $stmt = $conn->prepare("SELECT category_id FROM CATEGORIES WHERE name = ?");
+    $stmt->bind_param("s", $category);
+    $stmt->execute();
+    $stmt->bind_result($category_id);
+    $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $conn->prepare("INSERT IGNORE INTO PRODUCTS (name, price, category_id, color, description) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("sdiss", $name, $price, $category_id, $color, $desc);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Insert product images
+$product_images = [
+    'MMSU Cap' => '/product-image/cap2.png',
+    'MMSU Headband' => '/product-image/headband.png',
+    'MMSU Jacket W' => '/product-image/jacket.png',
+    'MMSU Tote Bag' => '/product-image/tote.png',
+];
+
+foreach ($product_images as $product_name => $image_url) {
+    $stmt = $conn->prepare("SELECT product_id FROM PRODUCTS WHERE name = ?");
+    $stmt->bind_param("s", $product_name);
+    $stmt->execute();
+    $stmt->bind_result($product_id);
+    $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $conn->prepare("INSERT IGNORE INTO PRODUCT_IMAGES (product_id, image_url) VALUES (?, ?)");
+    $stmt->bind_param("is", $product_id, $image_url);
+    $stmt->execute();
+    $stmt->close();
+}
+
+// Close connection
+$conn->close();
+
+echo "Database initialization complete!\n";
+?>
+C:\xampp\htdocs\MMSU\mmsu-frontend\public\product-image\cap2.png
