@@ -226,7 +226,7 @@ foreach ($categories as $cat) {
 
 // Insert products
 $products = [
-    ['MMSU Hat', 150.00, 'Caps', 'Green', 'Official MMSU baseball cap with embroidered logo. Adjustable strap for perfect fit.'],
+    ['MMSU Cap', 150.00, 'Caps', 'Green', 'Official MMSU baseball cap with embroidered logo. Adjustable strap for perfect fit.'],
     ['MMSU Headband', 74.00, 'Accessories', 'Green', 'Comfortable headband for all-day wear.'],
     ['MMSU Jacket W', 499.99, 'Jackets', 'White', 'Water-resistant MMSU jacket for women with logo embroidery.'],
     ['MMSU Tote Bag', 199.99, 'Bags', 'White', 'Spacious and durable tote bag with MMSU branding.'],
@@ -249,10 +249,10 @@ foreach ($products as $p) {
 
 // Insert product images
 $product_images = [
-    'MMSU Hat' => 'images/hat.jpg',
-    'MMSU Headband' => 'images/headband.jpg',
-    'MMSU Jacket W' => 'images/jacket_w.jpg',
-    'MMSU Tote Bag' => 'images/tote_bag.jpg',
+    'MMSU Cap' => '/product-image/cap2.png',
+    'MMSU Headband' => '/product-image/headband.png',
+    'MMSU Jacket W' => '/product-image/jacket.png',
+    'MMSU Tote Bag' => '/product-image/tote.png',
 ];
 
 foreach ($product_images as $product_name => $image_url) {
@@ -274,3 +274,4 @@ $conn->close();
 
 echo "Database initialization complete!\n";
 ?>
+C:\xampp\htdocs\MMSU\mmsu-frontend\public\product-image\cap2.png
