@@ -21,7 +21,8 @@ $sql = "
         p.product_id AS id,
         p.name,
         p.description,
-        CONCAT('₱', FORMAT(p.price, 2)) AS price,
+        p.price,             
+        c.category_id,       
         c.name AS category,
         pi.image_url AS image,
         p.color AS color
@@ -30,6 +31,7 @@ $sql = "
     LEFT JOIN PRODUCT_IMAGES pi ON pi.product_id = p.product_id
     WHERE p.product_id = ?
 ";
+
 
 $stmt = $mysqli->prepare($sql);
 $stmt->bind_param("i", $id);

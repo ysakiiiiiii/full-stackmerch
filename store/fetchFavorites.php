@@ -38,7 +38,7 @@ $query = $mysqli->prepare("
     SELECT 
         f.product_id,
         p.name,
-        CONCAT('₱', FORMAT(p.price, 2)) AS price,
+        p.price AS price,
         pi.image_url AS image
     FROM FAVORITES f
     JOIN PRODUCTS p ON f.product_id = p.product_id
