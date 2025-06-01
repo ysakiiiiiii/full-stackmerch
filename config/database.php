@@ -1,12 +1,10 @@
 <?php
-// Start the session to access $_SESSION variables
-session_start();
-
 // Set CORS headers for frontend running at http://localhost:5173 (adjust origin as needed)
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header('Content-Type: application/json');
 
 // Handle preflight OPTIONS requests and exit early
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -44,7 +42,3 @@ if (!$mysqli->set_charset("utf8mb4")) {
     ]);
     exit();
 }
-
-// Now $mysqli is globally available in any script that includes this file
-
-// No closing PHP tag here to avoid accidental whitespace output

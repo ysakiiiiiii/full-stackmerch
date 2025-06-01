@@ -1,6 +1,7 @@
 <?php
-require_once '../config/database.php'; // Update path if needed
 session_start();
+
+require_once '../config/database.php'; // Update path if needed
 
 header("Content-Type: application/json");
 

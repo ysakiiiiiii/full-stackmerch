@@ -1,5 +1,5 @@
 <?php
-// store/fetch_products.php
+session_start();
 require_once '../config/database.php';
 
 $sql = "
