@@ -1,11 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
+require_once("../config/database.php");
 
 // A helper function to respond and exit immediately
 function respond($success, $message = "", $extra = []) {
@@ -43,15 +37,8 @@ if (!move_uploaded_file($_FILES['profile_pic']['tmp_name'], $target_path)) {
     respond(false, "Failed to move uploaded file.");
 }
 
-// Connect to database
-require_once(__DIR__ . '/../config/database.php');
-
-if (!$mysqli) {
-    respond(false, "Database connection failed.");
-}
-
 // Store relative path for DB (change this based on your public URL setup)
-$relative_path = '/mmsu-backend/profile/profile-pics/' . $filename;
+$relative_path = '/MMSU/mmsu-backend/profile/profile/profile-pics/' . $filename;
 
 // Prepare statement to update user profile pic URL
 $stmt = $mysqli->prepare("UPDATE USERS SET profile_pic_url = ? WHERE user_id = ?");

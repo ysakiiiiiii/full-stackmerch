@@ -1,4 +1,5 @@
 <?php
+
 // Set CORS headers for frontend running at http://localhost:5173 (adjust origin as needed)
 header("Access-Control-Allow-Origin: http://localhost:5173");
 header("Access-Control-Allow-Credentials: true");

@@ -22,7 +22,7 @@ if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
 }
 
 if (!$stmt) {
-    error_log("❌ SQL prepare failed for login input");
+    error_log("SQL prepare failed for login input");
     http_response_code(500);
     echo json_encode(["error" => "Failed to prepare login query"]);
     exit;
@@ -36,8 +36,8 @@ if ($user = $result->fetch_assoc()) {
     if (password_verify($password, $user['password_hash'])) {
         $_SESSION['user_id'] = $user['user_id'];
 
-        // ✅ Log basic info
-        error_log("🔐 Login successful for user_id: {$user['user_id']}, username: {$user['username']}");
+        //Log basic info
+        error_log("Login successful for user_id: {$user['user_id']}, username: {$user['username']}");
 
         // Fetch role
         $roleStmt = $mysqli->prepare("SELECT role FROM ROLES WHERE user_id = ? LIMIT 1");
@@ -48,7 +48,7 @@ if ($user = $result->fetch_assoc()) {
         $roleRow = $roleResult->fetch_assoc();
         $role = $roleRow['role'] ?? 'customer';
 
-        error_log("🔎 Role fetched for user_id {$user['user_id']}: {$role}");
+        error_log("Role fetched for user_id {$user['user_id']}: {$role}");
 
         echo json_encode([
             "message" => "Login successful",
@@ -58,12 +58,12 @@ if ($user = $result->fetch_assoc()) {
         ]);
     } else {
         http_response_code(401);
-        error_log("❌ Invalid password for username/email: {$loginInput}");
+        error_log("Invalid password for username/email: {$loginInput}");
         echo json_encode(["error" => "Invalid password"]);
     }
 } else {
     http_response_code(404);
-    error_log("❌ User not found for: {$loginInput}");
+    error_log("User not found for: {$loginInput}");
     echo json_encode(["error" => "User not found"]);
 }
 
