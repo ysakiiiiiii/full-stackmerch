@@ -11,8 +11,15 @@ if (!$user_id || !is_numeric($user_id)) {
     exit;
 }
 
-// Prepare the SQL query
-$stmt = $mysqli->prepare("SELECT user_id, username, email, profile_pic_url FROM USERS WHERE user_id = ?");
+// Query to get user info and role
+$query = "
+    SELECT u.user_id, u.username, u.email, u.profile_pic_url, r.role
+    FROM USERS u
+    LEFT JOIN ROLES r ON u.user_id = r.user_id
+    WHERE u.user_id = ?
+";
+
+$stmt = $mysqli->prepare($query);
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(["error" => "Failed to prepare statement"]);
@@ -24,6 +31,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
+    $row['role'] = $row['role'] ?? 'customer'; // Default role fallback
     echo json_encode($row);
 } else {
     http_response_code(404);
