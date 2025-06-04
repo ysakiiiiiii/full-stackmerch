@@ -160,7 +160,7 @@ execute_query($conn, "
         user_id INT NOT NULL,
         order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         total_amount DECIMAL(10,2) NOT NULL,
-        status ENUM('pending', 'failed', 'out for delivery', 'ready to pick up') DEFAULT 'pending',
+        status ENUM('pending', 'failed', 'out for delivery', 'ready to pick up', 'delivered') DEFAULT 'pending',
         shipping_address_id INT,
         payment_method VARCHAR(50),
         FOREIGN KEY (user_id) REFERENCES USERS(user_id),
