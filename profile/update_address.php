@@ -1,67 +1,89 @@
 <?php
-// CORS headers for React (running at localhost:5173)
-header("Access-Control-Allow-Origin: http://localhost:5173");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json");
+require_once '../config/database.php';
 
-// Preflight check
-if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
-    http_response_code(200);
-    exit();
+header('Content-Type: application/json');
+
+$json = file_get_contents('php://input');
+$data = json_decode($json, true);
+
+if (!isset($data['user_id'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'User ID is required']);
+    exit;
 }
 
-// Include DB connection
-require_once("../config/database.php");
+try {
+    $mysqli->begin_transaction();
 
-// Decode input
-$data = json_decode(file_get_contents("php://input"), true);
+    // Check if address exists
+    $check = $mysqli->prepare("SELECT user_id FROM addresses WHERE user_id = ?");
+    $check->bind_param("i", $data['user_id']);
+    $check->execute();
+    $exists = $check->get_result()->num_rows > 0;
+    $check->close();
 
-// ✅ Validate only address fields
-if (
-    !isset($data["user_id"]) ||
-    !isset($data["country"]) ||
-    !isset($data["city"]) ||
-    !isset($data["zip"])
-) {
+    if (!$exists) {
+        // Insert new address if none exists
+        $stmt = $mysqli->prepare(
+            "INSERT INTO addresses 
+            (user_id, country, province, municipality, barangay, zip_code) 
+            VALUES (?, ?, ?, ?, ?, ?)"
+        );
+    } else {
+        // Update existing address
+        $stmt = $mysqli->prepare(
+            "UPDATE addresses SET
+                country = ?,
+                province = ?,
+                municipality = ?,
+                barangay = ?,
+                zip_code = ?
+            WHERE user_id = ?"
+        );
+    }
+
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $mysqli->error);
+    }
+
+    // Bind parameters based on operation
+    if (!$exists) {
+        $stmt->bind_param(
+            "isssss",
+            $data['user_id'],
+            $data['country'],
+            $data['province'],
+            $data['municipality'],
+            $data['barangay'],
+            $data['zip_code']
+        );
+    } else {
+        $stmt->bind_param(
+            "sssssi",
+            $data['country'],
+            $data['province'],
+            $data['municipality'],
+            $data['barangay'],
+            $data['zip_code'],
+            $data['user_id']
+        );
+    }
+
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+
+    $mysqli->commit();
     echo json_encode([
-        "success" => false,
-        "message" => "Missing required fields"
+        'success' => true,
+        'message' => $exists ? 'Address updated successfully' : 'Address created successfully'
     ]);
-    exit();
+} catch (Exception $e) {
+    $mysqli->rollback();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+} finally {
+    if (isset($stmt)) $stmt->close();
+    $mysqli->close();
 }
-
-$user_id = $data["user_id"];
-$country = $data["country"];
-$city = $data["city"];
-$zip = $data["zip"];
-
-// Update address in DB
-$query = "UPDATE users SET country = ?, city = ?, zip = ? WHERE user_id = ?";
-$stmt = $mysqli->prepare($query);
-
-if (!$stmt) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Failed to prepare statement"
-    ]);
-    exit();
-}
-
-$stmt->bind_param("sssi", $country, $city, $zip, $user_id);
-
-if ($stmt->execute()) {
-    echo json_encode([
-        "success" => true,
-        "message" => "Address updated successfully"
-    ]);
-} else {
-    echo json_encode([
-        "success" => false,
-        "message" => "Database update failed"
-    ]);
-}
-
-$stmt->close();
-$mysqli->close();
+?>
