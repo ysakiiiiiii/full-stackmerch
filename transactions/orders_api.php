@@ -76,7 +76,7 @@ switch ($method) {
                 if ($customer['avatar']) {
                     $customer['avatar'] = 'http://' . $_SERVER['HTTP_HOST'] . $customer['avatar'];
                 } else {
-                    $customer['avatar'] = 'http://' . $_SERVER['HTTP_HOST'] . '/MMSU/mmsu-backend/assets/default-avatar.png';
+                    $customer['avatar'] = 'http://' . $_SERVER['HTTP_HOST'] . '/MMSU/mmsu-backend/profile/profile/profile-pics/user.png';
                 }
 
                 $order['customer_details'] = $customer;
