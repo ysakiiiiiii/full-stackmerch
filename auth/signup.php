@@ -55,7 +55,19 @@ if ($stmt->execute()) {
     $roleStmt->execute();
     $roleStmt->close();
 
-    echo json_encode(["message" => "Signup successful", "user_id" => $user_id]);
+    // Set session variables
+    $_SESSION['user_id'] = $user_id;
+    $_SESSION['username'] = $username;
+    $_SESSION['role'] = 'customer';
+    $_SESSION['is_authenticated'] = true;
+
+    // Return response with user info
+    echo json_encode([
+        "message" => "Signup successful", 
+        "user_id" => $user_id,
+        "username" => $username,
+        "role" => 'customer'
+    ]);
 } else {
     http_response_code(400);
     echo json_encode(["error" => "Signup failed", "details" => $stmt->error]);

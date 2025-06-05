@@ -1,0 +1,46 @@
+-- INSERT INTO ADDRESSES (user_id, country, province, municipality, barangay, zip_code, is_default)
+-- VALUES
+-- (2, 'CountryA', 'ProvinceA', 'MunicipalityA', 'BarangayA', '1000', 1),
+-- (3, 'CountryB', 'ProvinceB', 'MunicipalityB', 'BarangayB', '2000', 1),
+-- (4, 'CountryC', 'ProvinceC', 'MunicipalityC', 'BarangayC', '3000', 1);
+
+
+-- INSERT INTO ORDERS (user_id, total_amount, status, shipping_address_id, payment_method)
+-- VALUES
+-- (2, 150.00, 'pending', 1, 'Credit Card'),
+-- (3, 250.75, 'out for delivery', 2, 'Paypal'),
+-- (3, 100.00, 'ready to pick up', 3, 'Cash'),
+-- (4, 300.50, 'pending', 1, 'Credit Card'),
+-- (2, 175.20, 'failed', 2, 'Paypal');
+
+
+-- UPDATE USERS SET first_name = 'Lucky', last_name = 'Acidera' WHERE user_id = 2;
+-- UPDATE USERS SET first_name = 'Russel', last_name = 'Daguimol' WHERE user_id = 3;
+-- UPDATE USERS SET first_name = 'Lin Anthony', last_name = 'Pineda' WHERE user_id = 4;
+
+-- INSERT INTO ADDRESSES (user_id, country, province, municipality, barangay, zip_code, is_default)
+-- VALUES
+--   (2, 'Philippines', 'Metro Manila', 'Quezon City', 'Barangay 1', '1100', 1),
+--   (3, 'Philippines', 'Cebu', 'Cebu City', 'Barangay 2', '6000', 1),
+--   (4, 'Philippines', 'Davao del Sur', 'Davao City', 'Barangay 3', '8000', 1);
+
+
+-- INSERT INTO ORDER_ITEMS (order_id, product_id, quantity, unit_price)
+-- VALUES
+--   (6, 4, 2, 49.99),
+--   (7, 2, 1, 19.99),
+--   (8, 4, 5, 9.99),
+--   (9, 2, 1, 49.99),
+--   (6, 2, 3, 29.99);
+
+-- SHOW COLUMNS FROM ORDERS LIKE 'status';
+-- ALTER TABLE ORDERS 
+-- MODIFY COLUMN status ENUM('pending', 'failed', 'out for delivery', 'ready to pick up', 'delivered') 
+-- DEFAULT 'pending';
+-- 	
+
+select * from addresses
+
+
+
+
