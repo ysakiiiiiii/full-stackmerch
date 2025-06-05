@@ -1,23 +1,63 @@
 <?php
-require_once  '../config/database.php'; // Adjust path as needed
+// Set CORS headers for frontend running at http://localhost:5173
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: POST, PUT, GET, OPTIONS, DELETE");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header('Content-Type: application/json');
 
+// Handle preflight OPTIONS requests and exit early
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
-if (!$mysqli) {
+// Database connection parameters
+$host = 'localhost';
+$username = 'root';
+$password = 'root';
+$database = 'ecommerce_db';
+
+// Create a new mysqli connection object
+$mysqli = new mysqli($host, $username, $password, $database);
+
+// Check connection
+if ($mysqli->connect_errno) {
+    error_log("Database connection failed: " . $mysqli->connect_error);
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed']);
-    exit;
+    echo json_encode([
+        'success' => false,
+        'message' => 'Failed to connect to database'
+    ]);
+    exit();
+}
+
+// Set charset for proper encoding
+if (!$mysqli->set_charset("utf8mb4")) {
+    error_log("Error loading character set utf8mb4: " . $mysqli->error);
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error loading character set'
+    ]);
+    exit();
 }
 
 // Get request method
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Get payment ID from URL if present
+// Get payment ID from URL or query parameters
 $paymentId = null;
-if (isset($_SERVER['PATH_INFO'])) {
-    $request = explode('/', trim($_SERVER['PATH_INFO'], '/'));
-    $paymentId = isset($request[0]) && is_numeric($request[0]) ? (int)$request[0] : null;
-} elseif (isset($_GET['id'])) {
+if (isset($_GET['id'])) {
     $paymentId = (int)$_GET['id'];
+}
+
+// Get input data
+$input = json_decode(file_get_contents('php://input'), true);
+
+// If payment ID is in input data, use that
+if (isset($input['payment_id'])) {
+    $paymentId = (int)$input['payment_id'];
 }
 
 try {
@@ -47,17 +87,15 @@ try {
             
         case 'POST':
             // Add a new payment method
-            $data = json_decode(file_get_contents('php://input'), true);
-            
-            if (!isset($data['user_id']) || !isset($data['type'])) {
+            if (!isset($input['user_id']) || !isset($input['type'])) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Missing required fields']);
                 exit;
             }
             
-            $userId = (int)$data['user_id'];
-            $type = $data['type'];
-            $isDefault = isset($data['is_default']) ? (bool)$data['is_default'] : false;
+            $userId = (int)$input['user_id'];
+            $type = $input['type'];
+            $isDefault = isset($input['is_default']) ? (bool)$input['is_default'] : false;
             
             // Begin transaction
             $mysqli->begin_transaction();
@@ -72,23 +110,23 @@ try {
                 }
                 
                 if ($type === 'card') {
-                    if (!isset($data['card_number']) || !isset($data['card_expiry'])) {
+                    if (!isset($input['card_number']) || !isset($input['card_expiry'])) {
                         throw new Exception('Missing card details');
                     }
                     
-                    $cardNumber = $data['card_number'];
-                    $cardExpiry = $data['card_expiry'];
+                    $cardNumber = $input['card_number'];
+                    $cardExpiry = $input['card_expiry'];
                     
                     $query = "INSERT INTO USER_PAYMENTS (user_id, type, card_number, card_expiry, is_default) 
                               VALUES (?, ?, ?, ?, ?)";
                     $stmt = $mysqli->prepare($query);
                     $stmt->bind_param("isssi", $userId, $type, $cardNumber, $cardExpiry, $isDefault);
                 } else if ($type === 'gcash') {
-                    if (!isset($data['gcash_phone'])) {
+                    if (!isset($input['gcash_phone'])) {
                         throw new Exception('Missing GCash phone number');
                     }
                     
-                    $gcashPhone = $data['gcash_phone'];
+                    $gcashPhone = $input['gcash_phone'];
                     
                     $query = "INSERT INTO USER_PAYMENTS (user_id, type, gcash_phone, is_default) 
                               VALUES (?, ?, ?, ?)";
@@ -125,11 +163,9 @@ try {
             // Update a payment method
             if (!$paymentId) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Invalid payment ID']);
+                echo json_encode(['error' => 'Payment ID is required']);
                 exit;
             }
-            
-            $data = json_decode(file_get_contents('php://input'), true);
             
             // Begin transaction
             $mysqli->begin_transaction();
@@ -148,7 +184,7 @@ try {
                 }
                 
                 $type = $currentPayment['type'];
-                $isDefault = isset($data['is_default']) ? (bool)$data['is_default'] : $currentPayment['is_default'];
+                $isDefault = isset($input['is_default']) ? (bool)$input['is_default'] : $currentPayment['is_default'];
                 
                 // If setting as default, first unset any existing defaults
                 if ($isDefault && !$currentPayment['is_default']) {
@@ -159,8 +195,8 @@ try {
                 }
                 
                 if ($type === 'card') {
-                    $cardNumber = isset($data['card_number']) ? $data['card_number'] : $currentPayment['card_number'];
-                    $cardExpiry = isset($data['card_expiry']) ? $data['card_expiry'] : $currentPayment['card_expiry'];
+                    $cardNumber = isset($input['card_number']) ? $input['card_number'] : $currentPayment['card_number'];
+                    $cardExpiry = isset($input['card_expiry']) ? $input['card_expiry'] : $currentPayment['card_expiry'];
                     
                     $query = "UPDATE USER_PAYMENTS SET 
                               card_number = ?, 
@@ -170,7 +206,7 @@ try {
                     $stmt = $mysqli->prepare($query);
                     $stmt->bind_param("ssii", $cardNumber, $cardExpiry, $isDefault, $paymentId);
                 } else if ($type === 'gcash') {
-                    $gcashPhone = isset($data['gcash_phone']) ? $data['gcash_phone'] : $currentPayment['gcash_phone'];
+                    $gcashPhone = isset($input['gcash_phone']) ? $input['gcash_phone'] : $currentPayment['gcash_phone'];
                     
                     $query = "UPDATE USER_PAYMENTS SET 
                               gcash_phone = ?, 
@@ -206,7 +242,7 @@ try {
             // Delete a payment method
             if (!$paymentId) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Invalid payment ID']);
+                echo json_encode(['error' => 'Payment ID is required']);
                 exit;
             }
             
