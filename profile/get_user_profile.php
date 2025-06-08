@@ -31,7 +31,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($row = $result->fetch_assoc()) {
-    $row['role'] = $row['role'] ?? 'customer'; // Default role fallback
+    $row['role'] = $row['role'] ?? 'customer'; 
     echo json_encode($row);
 } else {
     http_response_code(404);

@@ -274,4 +274,3 @@ $conn->close();
 
 echo "Database initialization complete!\n";
 ?>
-C:\xampp\htdocs\MMSU\mmsu-frontend\public\product-image\cap2.png

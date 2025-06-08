@@ -63,7 +63,6 @@ if (isset($input['payment_id'])) {
 try {
     switch ($method) {
         case 'GET':
-            // Get payment methods for a user
             if (!isset($_GET['user_id'])) {
                 http_response_code(400);
                 echo json_encode(['error' => 'User ID is required']);
